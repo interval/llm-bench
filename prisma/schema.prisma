@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model benchmark_runs {
+  id               Int               @id @default(autoincrement())
+  created_at       DateTime?         @default(now()) @db.Timestamptz(6)
+  model            String?
+  benchmark        Int?
+  prompt_template  Int?
+  benchmarks       benchmarks?       @relation(fields: [benchmark], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  prompt_templates prompt_templates? @relation(fields: [prompt_template], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  example_runs     example_runs[]
+}
+
+model benchmarks {
+  id               Int                @id @default(autoincrement())
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  name             String?
+  input_schema     Json?              @db.Json
+  output_schema    Json?              @db.Json
+  benchmark_runs   benchmark_runs[]
+  examples         examples[]
+  prompt_templates prompt_templates[]
+}
+
+model example_runs {
+  id             Int             @id @default(autoincrement())
+  created_at     DateTime?       @default(now()) @db.Timestamptz(6)
+  benchmark_run  Int?
+  example        Int?
+  outputs        Json?           @db.Json
+  success        Boolean?
+  error          String?
+  raw_response   String?
+  raw_prompt     String?
+  durationMs     Int?
+  benchmark_runs benchmark_runs? @relation(fields: [benchmark_run], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  examples       examples?       @relation(fields: [example], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model examples {
+  id               Int            @id @default(autoincrement())
+  created_at       DateTime?      @default(now()) @db.Timestamptz(6)
+  inputs           Json?          @db.Json
+  expected_outputs Json?          @db.Json
+  benchmark        Int?
+  example_runs     example_runs[]
+  benchmarks       benchmarks?    @relation(fields: [benchmark], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model prompt_templates {
+  id              Int              @id @default(autoincrement())
+  created_at      DateTime?        @default(now()) @db.Timestamptz(6)
+  input_template  String?
+  benchmark       Int?
+  name            String?
+  system_template String?
+  benchmark_runs  benchmark_runs[]
+  benchmarks      benchmarks?      @relation(fields: [benchmark], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
