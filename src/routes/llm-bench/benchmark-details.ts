@@ -10,6 +10,13 @@ export default new Page({
     const benchmark = await requireBenchmark();
 
     const exampleRuns = await prisma.example_runs.findMany({
+      where: {
+        benchmark_runs: {
+          benchmarks: {
+            id: benchmark.id,
+          },
+        },
+      },
       select: {
         outputs: true,
         durationMs: true,
@@ -68,8 +75,6 @@ export default new Page({
 
       return acc;
     }, {});
-
-    console.log("benchmarkRunsData", benchmarkRunsData);
 
     const examples = await prisma.examples.findMany({
       where: {

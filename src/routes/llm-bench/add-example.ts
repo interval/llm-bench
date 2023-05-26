@@ -23,17 +23,27 @@ export default new Action({
       }
     );
 
+    const humanEval = benchmark.eval_method === "human";
+
     const outputs = Object.keys(benchmark.output_schema["properties"]).map(
       key => {
         const property = benchmark.output_schema["properties"][key];
         if (property.type === "number") {
-          return io.input.number(key, { helpText: property.description });
+          return io.input
+            .number(key, { helpText: property.description })
+            .optional(humanEval);
         } else if (property.type === "string") {
-          return io.input.text(key, { helpText: property.description });
+          return io.input
+            .text(key, { helpText: property.description })
+            .optional(humanEval);
         } else if (property.type === "boolean") {
-          return io.input.boolean(key, { helpText: property.description });
+          return io.input
+            .boolean(key, { helpText: property.description })
+            .optional(humanEval);
         } else if (property.type === "date") {
-          return io.input.datetime(key, { helpText: property.description });
+          return io.input
+            .datetime(key, { helpText: property.description })
+            .optional(humanEval);
         }
       }
     );

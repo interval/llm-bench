@@ -3,6 +3,44 @@ import { z } from "zod";
 import { jsonSchemaToZod, jsonFormatInstructions } from "./langchain";
 import prisma from "../prisma";
 
+export const evaluateExampleRun = async exampleRun => {
+  const results = await io.group([
+    io.display.object("Outputs", {
+      data: exampleRun.outputs,
+    }),
+    io.display.object("Expected outputs", {
+      data: exampleRun.examples.expected_outputs,
+    }),
+    io.display.code("Raw prompt", {
+      code: exampleRun.raw_prompt,
+    }),
+    io.display.code("Raw response", {
+      code: exampleRun.error
+        ? `Error: ${exampleRun.error}${
+            exampleRun.raw_response ? `\n\n${exampleRun.raw_response}` : ""
+          }`
+        : exampleRun.raw_response || "",
+    }),
+    io.select.single("Is this completion a success?", {
+      options: [
+        { label: "✅ Success", value: true },
+        { label: "❌ Failure", value: false },
+      ],
+    }),
+  ]);
+
+  const success = results[results.length - 1].value;
+
+  await prisma.example_runs.update({
+    where: {
+      id: exampleRun.id,
+    },
+    data: {
+      success,
+    },
+  });
+};
+
 export const createPromptTemplate = async (benchmark = null) => {
   if (!benchmark) {
     benchmark = await requireBenchmark();

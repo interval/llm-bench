@@ -20,6 +20,7 @@ export default new Page({
         id,
       },
       select: {
+        id: true,
         created_at: true,
         success: true,
         outputs: true,
@@ -49,23 +50,37 @@ export default new Page({
     const benchmark = data.benchmark_runs.benchmarks;
     const example = data.examples;
 
+    const menuItems = [
+      {
+        label: "Back to benchmark run",
+        route: "llm-bench/benchmark-run-details",
+        params: { id: benchmarkRun.id },
+      },
+    ];
+
+    if (data.success === null) {
+      menuItems.push({
+        label: "Evaluate",
+        route: "llm-bench/evaluate-example-run",
+        params: { id: data.id },
+      });
+    }
+
     return new Layout({
       title: `Example run details`,
       description: `This is one example result for the ${benchmark.name} benchmark.`,
-      menuItems: [
-        {
-          label: "Back to benchmark run",
-          route: "llm-bench/benchmark-run-details",
-          params: { id: benchmarkRun.id },
-        },
-      ],
+      menuItems,
       children: [
         io.display.metadata("Details", {
           layout: "card",
           data: [
             {
               label: "Success?",
-              value: data.success ? "✅" : "❌",
+              value: data.success
+                ? "✅"
+                : data.success === false
+                ? "❌"
+                : "⏳ Needs evaluation",
             },
             {
               label: "Model",

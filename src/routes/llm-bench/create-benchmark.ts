@@ -2,6 +2,7 @@ import { Action, io, ctx } from "@interval/sdk";
 import { z } from "zod";
 import { requireBenchmark } from "../../utils/shared";
 import prisma from "../../prisma";
+import { EvalMethod } from "@prisma/client";
 
 export default new Action({
   name: "➕ Create benchmark",
@@ -29,6 +30,18 @@ export default new Action({
             return "A benchmark already exists with this name";
           }
         }),
+    ]);
+
+    const [_evalMarkdown, evalMethod] = await io.group([
+      io.display.markdown(
+        `**How should the the LLM's completions be evaluated for this benchmark?**\n\nLLM Bench allows you to evaluate the behavior of a language model, but depending on the nature of your task, _how_ the outputs are evaluated is up to you. Currently two methods are supported:\n\n* **String equality**: Output variables must exactly match the expectations defined in examples (automatic, ideal for classification and multiple choice tasks)\n* **Human**: A human should rate the outputs as successful or not (manual, more flexible)`
+      ),
+      io.select.single("Evaluation method", {
+        options: [
+          { label: "String equality", value: "equality" },
+          { label: "Human evaluation", value: "human" },
+        ],
+      }),
     ]);
 
     const inputSchemaProps = {};
@@ -129,6 +142,7 @@ export default new Action({
     const data = await prisma.benchmarks.create({
       data: {
         name,
+        eval_method: evalMethod.value as EvalMethod,
         input_schema: {
           type: "object",
           properties: inputSchemaProps,

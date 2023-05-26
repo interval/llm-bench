@@ -20,6 +20,7 @@ export default new Page({
         id,
       },
       select: {
+        id: true,
         model: true,
         created_at: true,
         benchmarks: {
@@ -51,6 +52,11 @@ export default new Page({
       },
     });
 
+    const needsEvaluation =
+      exampleRuns.filter(
+        run => run.success === null // or undefined?
+      ).length > 0;
+
     // should display prompts somewhere w/ comparison
 
     const successfulExampleRuns = exampleRuns.filter(
@@ -73,34 +79,49 @@ export default new Page({
       ];
     });
 
+    const menuItems = [
+      {
+        label: "Back to benchmark",
+        route: "llm-bench/benchmark-details",
+        params: { id: benchmark.id },
+      },
+    ];
+
+    const metadata = [
+      {
+        label: "Model",
+        value: data.model,
+      },
+      {
+        label: "Prompt template",
+        value: promptTemplate.name,
+      },
+      {
+        label: "Accuracy",
+        value: accuracy,
+      },
+    ];
+
+    if (needsEvaluation) {
+      menuItems.push({
+        label: "Evaluate",
+        route: "llm-bench/evaluate-benchmark-run",
+        params: { id: data.id },
+      });
+    }
+
     return new Layout({
       title: `${new Date(data.created_at).toLocaleString()} run for ${
         benchmark.name
       }`,
-      menuItems: [
-        {
-          label: "Back to benchmark",
-          route: "llm-bench/benchmark-details",
-          params: { id: benchmark.id },
-        },
-      ],
+      description: needsEvaluation
+        ? "⚠️ This run has examples that stil need to be evaluated by a human."
+        : "",
+      menuItems,
       children: [
         io.display.metadata("Details", {
           layout: "card",
-          data: [
-            {
-              label: "Model",
-              value: data.model,
-            },
-            {
-              label: "Prompt template",
-              value: promptTemplate.name,
-            },
-            {
-              label: "Accuracy",
-              value: accuracy,
-            },
-          ],
+          data: metadata,
         }),
         io.display.table("Results", {
           data: exampleRuns,
@@ -108,7 +129,12 @@ export default new Page({
             ...columns,
             {
               label: "Success",
-              renderCell: row => (row.success ? "✅" : "❌"),
+              renderCell: row =>
+                row.success
+                  ? "✅"
+                  : row.success === false
+                  ? "❌"
+                  : "⏳ Needs evaluation",
             },
             {
               label: "Duration (seconds)",

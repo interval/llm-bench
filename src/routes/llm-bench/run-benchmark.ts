@@ -69,8 +69,6 @@ export default new Action({
       },
     });
 
-    console.log("examples", examples);
-
     const confirmed = await io.confirm(`Run ${benchmark.name}?`, {
       helpText: `This will run against ${benchmark._count.examples} examples.`,
     });
@@ -121,7 +119,7 @@ export default new Action({
         ...(example.inputs as Prisma.JsonObject),
       });
 
-      let success = false;
+      let success = benchmark.eval_method === "human" ? undefined : false;
       let outputs = undefined;
 
       let {
@@ -143,9 +141,11 @@ export default new Action({
           }
           outputs = JSON.parse(rawOutput.substring(jsonStart, jsonEnd + 1));
           const parsedOutputs = outputSchema.parse(outputs);
-          success = Object.keys(example.expected_outputs).every(key => {
-            return parsedOutputs[key] === example.expected_outputs[key];
-          });
+          if (benchmark.eval_method === "equality") {
+            success = Object.keys(example.expected_outputs).every(key => {
+              return parsedOutputs[key] === example.expected_outputs[key];
+            });
+          }
         } catch (error) {
           console.error("Failed to parse output", error);
           errorMsg = error.message;
@@ -182,7 +182,6 @@ export default new Action({
     });
 
     const sampleRun = exampleRuns[0];
-    console.log("sampleRun", sampleRun);
     const columns = Object.keys(sampleRun.examples.expected_outputs).flatMap(
       key => {
         return [
@@ -205,7 +204,12 @@ export default new Action({
           ...columns,
           {
             label: "Success",
-            renderCell: row => (row.success ? "✅" : "❌"),
+            renderCell: row =>
+              row.success
+                ? "✅"
+                : row.success === false
+                ? "❌"
+                : "⏳ Needs evaluation",
           },
           {
             label: "Duration (seconds)",
