@@ -56,6 +56,11 @@ export default new Page({
         route: "llm-bench/benchmark-run-details",
         params: { id: benchmarkRun.id },
       },
+      {
+        label: "Retry",
+        route: "llm-bench/run-example",
+        params: { id: data.id },
+      },
     ];
 
     if (data.success === null) {

@@ -132,6 +132,14 @@ export default new Page({
           ),
           columns: [
             {
+              label: "Run (click for details)",
+              renderCell: row => ({
+                label: new Date(row.createdAt).toLocaleString(),
+                route: "llm-bench/benchmark-run-details",
+                params: { id: row.id },
+              }),
+            },
+            {
               label: "Model",
               renderCell: row => row.model,
             },
@@ -160,18 +168,6 @@ export default new Page({
             {
               label: "Avg duration (seconds)",
               renderCell: row => row.totalMs / row.totalMsCount / 1000,
-            },
-            {
-              label: "Created at",
-              renderCell: row => new Date(row.createdAt).toLocaleString(),
-            },
-            {
-              label: "",
-              renderCell: row => ({
-                label: "View run details",
-                route: "llm-bench/benchmark-run-details",
-                params: { id: row.id },
-              }),
             },
           ],
         }),

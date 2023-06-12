@@ -9,26 +9,24 @@ const temperature = 0;
 const max_tokens = 150;
 
 const legacyModels = [
-  "text-ada-001",
-  "text-babbage-001",
-  "text-curie-001",
-  "text-davinci-002",
-  "text-davinci-003",
+  "openai/text-ada-001",
+  "openai/text-babbage-001",
+  "openai/text-curie-001",
+  "openai/text-davinci-002",
+  "openai/text-davinci-003",
 ];
 
 export const openaiModels = [
-  "gpt-3.5-turbo",
-  "gpt-3.5-turbo-0301",
-  "gpt-4",
-  "gpt-4-0314",
-  "gpt-4-32k",
-  "gpt-4-32k-0314",
+  "openai/gpt-3.5-turbo",
+  "openai/gpt-3.5-turbo-0301",
+  "openai/gpt-4",
+  "openai/gpt-4-0314",
+  "openai/gpt-4-32k",
+  "openai/gpt-4-32k-0314",
   ...legacyModels,
 ];
 
-async function hitAPI(): Promise<any> {}
-
-export const createCompletion = async (systemPrompt, inputPrompt, model) => {
+export const createCompletion = async (model, systemPrompt, inputPrompt) => {
   let output = null;
   let error = null;
   let startTime = Date.now();
@@ -36,7 +34,7 @@ export const createCompletion = async (systemPrompt, inputPrompt, model) => {
   try {
     if (legacyModels.includes(model)) {
       const response = await openai.createCompletion({
-        model,
+        model: model.replace("openai/", ""),
         prompt: `${systemPrompt}\n\n${inputPrompt}`,
         temperature,
         max_tokens,
@@ -58,7 +56,7 @@ export const createCompletion = async (systemPrompt, inputPrompt, model) => {
       ];
 
       const completion = await openai.createChatCompletion({
-        model,
+        model: model.replace("openai/", ""),
         messages,
         max_tokens,
       });

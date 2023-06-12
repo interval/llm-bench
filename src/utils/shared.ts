@@ -1,7 +1,88 @@
 import { Action, io, ctx } from "@interval/sdk";
 import { z } from "zod";
 import { jsonSchemaToZod, jsonFormatInstructions } from "./langchain";
+import { Prisma } from "@prisma/client";
 import prisma from "../prisma";
+
+export const runExample = async ({
+  exampleRun,
+  benchmark,
+  benchmarkRun,
+  example,
+  systemPrompt,
+  inputPrompt,
+  outputSchema,
+  completionFn,
+  model,
+}) => {
+  const formattedSystemPrompt = await systemPrompt.formatPromptValue({
+    ...(example.inputs as Prisma.JsonObject),
+  });
+
+  const formattedInputPrompt = await inputPrompt.formatPromptValue({
+    ...(example.inputs as Prisma.JsonObject),
+  });
+
+  let success = benchmark.eval_method === "human" ? undefined : false;
+  let outputs = undefined;
+
+  let {
+    output: rawOutput,
+    error: errorMsg,
+    durationMs,
+  } = await completionFn(
+    model,
+    formattedSystemPrompt.toString(),
+    formattedInputPrompt.toString()
+  );
+
+  if (rawOutput && !errorMsg) {
+    try {
+      const jsonStart = rawOutput.indexOf("{");
+      const jsonEnd = rawOutput.lastIndexOf("}");
+      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+        throw new Error("Failed to find JSON in LLM response");
+      }
+      outputs = JSON.parse(rawOutput.substring(jsonStart, jsonEnd + 1));
+      const parsedOutputs = outputSchema.parse(outputs);
+      if (benchmark.eval_method === "equality") {
+        success = Object.keys(example.expected_outputs).every(key => {
+          return parsedOutputs[key] === example.expected_outputs[key];
+        });
+      }
+    } catch (error) {
+      console.error("Failed to parse output", error);
+      errorMsg = error.message;
+    }
+  }
+
+  if (exampleRun) {
+    await prisma.example_runs.update({
+      where: { id: exampleRun.id },
+      data: {
+        outputs,
+        success,
+        error: errorMsg,
+        raw_prompt: `${formattedSystemPrompt.toString()}\n\n${formattedInputPrompt.toString()}`,
+        raw_response: rawOutput,
+        durationMs,
+      },
+    });
+  } else {
+    await prisma.example_runs.create({
+      data: {
+        example: example.id,
+        benchmark_run: benchmarkRun.id,
+        outputs,
+        success,
+        error: errorMsg,
+        raw_prompt: `${formattedSystemPrompt.toString()}\n\n${formattedInputPrompt.toString()}`,
+        raw_response: rawOutput,
+        durationMs,
+      },
+    });
+  }
+};
 
 export const evaluateExampleRun = async exampleRun => {
   const results = await io.group([

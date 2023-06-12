@@ -1,11 +1,15 @@
 import { Prisma } from "@prisma/client";
 import { Action, io, ctx } from "@interval/sdk";
 import { z } from "zod";
-import { requireBenchmark, createPromptTemplate } from "../../utils/shared";
-import { createCompletion, openaiModels } from "../../utils/openai";
+import {
+  requireBenchmark,
+  createPromptTemplate,
+  runExample,
+} from "../../utils/shared";
 import { PromptTemplate as LangChainPromptTemplate } from "langchain/prompts";
-import { jsonSchemaToZod, jsonFormatInstructions } from "../../utils/langchain";
+import { jsonSchemaToZod } from "../../utils/langchain";
 import prisma from "../../prisma";
+import { AVAILABLE_MODELS } from "../../utils/models";
 
 export default new Action({
   name: "🏃 Run a benchmark",
@@ -20,7 +24,7 @@ export default new Action({
     });
 
     const model = await io.select.single("Select a model to run against", {
-      options: openaiModels,
+      options: Object.keys(AVAILABLE_MODELS),
     });
 
     let promptTemplate;
@@ -111,58 +115,16 @@ export default new Action({
     const outputSchema = jsonSchemaToZod(benchmark.output_schema);
 
     for (const example of examples) {
-      const formattedSystemPrompt = await systemPrompt.formatPromptValue({
-        ...(example.inputs as Prisma.JsonObject),
-      });
-
-      const formattedInputPrompt = await inputPrompt.formatPromptValue({
-        ...(example.inputs as Prisma.JsonObject),
-      });
-
-      let success = benchmark.eval_method === "human" ? undefined : false;
-      let outputs = undefined;
-
-      let {
-        output: rawOutput,
-        error: errorMsg,
-        durationMs,
-      } = await createCompletion(
-        formattedSystemPrompt.toString(),
-        formattedInputPrompt.toString(),
-        model
-      );
-
-      if (rawOutput && !errorMsg) {
-        try {
-          const jsonStart = rawOutput.indexOf("{");
-          const jsonEnd = rawOutput.lastIndexOf("}");
-          if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-            throw new Error("Failed to find JSON in LLM response");
-          }
-          outputs = JSON.parse(rawOutput.substring(jsonStart, jsonEnd + 1));
-          const parsedOutputs = outputSchema.parse(outputs);
-          if (benchmark.eval_method === "equality") {
-            success = Object.keys(example.expected_outputs).every(key => {
-              return parsedOutputs[key] === example.expected_outputs[key];
-            });
-          }
-        } catch (error) {
-          console.error("Failed to parse output", error);
-          errorMsg = error.message;
-        }
-      }
-
-      await prisma.example_runs.create({
-        data: {
-          example: example.id,
-          benchmark_run: benchmarkRun.id,
-          outputs,
-          success,
-          error: errorMsg,
-          raw_prompt: `${formattedSystemPrompt.toString()}\n\n${formattedInputPrompt.toString()}`,
-          raw_response: rawOutput,
-          durationMs,
-        },
+      await runExample({
+        exampleRun: null,
+        benchmark,
+        benchmarkRun,
+        example,
+        systemPrompt,
+        inputPrompt,
+        outputSchema,
+        completionFn: AVAILABLE_MODELS[model],
+        model,
       });
 
       ctx.loading.completeOne();

@@ -69,10 +69,12 @@ export default new Action({
               if (inputSchemaProps[value])
                 return "An output variable with this name already exists";
             }),
-          io.input.text("Description", {
-            helpText:
-              "Brief explanation of what this input is for, to remind you as you construct prompts.",
-          }),
+          io.input
+            .text("Description", {
+              helpText:
+                "Brief explanation of what this input is for, to remind you as you construct prompts.",
+            })
+            .optional(),
           io.select.single("Type", {
             options: ["string", "number", "boolean", "date"],
             defaultValue: "string",

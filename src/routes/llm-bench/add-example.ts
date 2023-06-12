@@ -58,6 +58,10 @@ export default new Action({
             io.display.markdown(
               `# What's an example?\n\n**An example is a single standalone test of behavior that you want from your LLM**. It could be answering a specified question, classifying, summarizing, or completing provided input, or something more complicated.\n\nExamples consists of a set of input variables for a task, and their corresponding expected output variables.\n\nYou're adding examples for the **${benchmark.name}** benchmark. Examples must conform to the schema below.`
             ),
+            io.display.link("Upload a CSV to add many examples at once", {
+              route: "llm-bench/add-many-examples",
+              params: { id: benchmark.id },
+            }),
           ]
         : [];
       includeInstructions = false;
@@ -70,7 +74,7 @@ export default new Action({
           io.display.heading(`${benchmark.name} expected outputs`),
           ...outputs,
         ])
-        .withChoices(["Save", "Save and add another"]);
+        .withChoices(["Save and done", "Save and add another"]);
 
       const inputValues = returnValue.slice(
         1 + instructions.length,
@@ -105,7 +109,7 @@ export default new Action({
       exampleCount++;
       await io.display.markdown(`## ✅ Example added!`);
 
-      if (choice === "Save") {
+      if (choice === "Save and done") {
         allDone = true;
       }
     }

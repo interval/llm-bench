@@ -44,6 +44,12 @@ export default new Page({
           params: { id: benchmark.id },
           theme: "primary",
         },
+        {
+          label: "Back to benchmark",
+          route: "llm-bench/benchmark-details",
+          params: { id: benchmark.id },
+          theme: "secondary",
+        },
       ],
       children: [
         io.display.code("System template", {
