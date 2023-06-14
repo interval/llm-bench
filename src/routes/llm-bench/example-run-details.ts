@@ -71,49 +71,55 @@ export default new Page({
       });
     }
 
+    const children = [
+      io.display.metadata("Details", {
+        layout: "card",
+        data: [
+          {
+            label: "Success?",
+            value: data.success
+            ? "✅"
+            : data.success === false
+            ? "❌"
+            : "⏳ Needs evaluation",
+          },
+          {
+            label: "Model",
+            value: benchmarkRun.model,
+          },
+          {
+            label: "Run at",
+            value: new Date(data.created_at).toLocaleString(),
+          },
+        ],
+      }),
+      io.display.object("Outputs", {
+        data: data.outputs,
+      }),
+      io.display.object("Expected outputs", {
+        data: example.expected_outputs,
+      }),
+      io.display.code("Raw prompt", {
+        code: data.raw_prompt,
+      }),
+      io.display.code("Raw response", {
+        code: data.raw_response || ""
+      }),
+    ]
+
+    if (data.error) {
+      children.push(
+        io.display.code("Error", {
+          code: data.error,
+        })
+      );
+    }
+
     return new Layout({
       title: `Example run details`,
       description: `This is one example result for the ${benchmark.name} benchmark.`,
       menuItems,
-      children: [
-        io.display.metadata("Details", {
-          layout: "card",
-          data: [
-            {
-              label: "Success?",
-              value: data.success
-                ? "✅"
-                : data.success === false
-                ? "❌"
-                : "⏳ Needs evaluation",
-            },
-            {
-              label: "Model",
-              value: benchmarkRun.model,
-            },
-            {
-              label: "Run at",
-              value: new Date(data.created_at).toLocaleString(),
-            },
-          ],
-        }),
-        io.display.object("Outputs", {
-          data: data.outputs,
-        }),
-        io.display.object("Expected outputs", {
-          data: example.expected_outputs,
-        }),
-        io.display.code("Raw prompt", {
-          code: data.raw_prompt,
-        }),
-        io.display.code("Raw response", {
-          code: data.error
-            ? `Error: ${data.error}${
-                data.raw_response ? `\n\n${data.raw_response}` : ""
-              }`
-            : data.raw_response || "",
-        }),
-      ],
+      children,
     });
   },
 });

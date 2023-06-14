@@ -19,9 +19,12 @@ export const runExample = async ({
     ...(example.inputs as Prisma.JsonObject),
   });
 
-  const formattedInputPrompt = await inputPrompt.formatPromptValue({
-    ...(example.inputs as Prisma.JsonObject),
-  });
+  let formattedInputPrompt = ""
+  if (inputPrompt) {
+    formattedInputPrompt = await inputPrompt.formatPromptValue({
+      ...(example.inputs as Prisma.JsonObject),
+    });
+  }
 
   let success = benchmark.eval_method === "human" ? undefined : false;
   let outputs = undefined;
@@ -130,7 +133,7 @@ export const createPromptTemplate = async (benchmark = null) => {
   const inputSchemaMarkdown = inputVariables
     .map(key => {
       const property = benchmark.input_schema["properties"][key];
-      return `* \`${key}\` -> ${property.description}`;
+      return `* \`${key}\`${property.description ? ` -> ${property.description}` : ""}`;
     })
     .join("\n");
 

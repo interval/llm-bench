@@ -103,14 +103,14 @@ export default new Action({
       ],
     });
 
-    const inputPrompt = new LangChainPromptTemplate({
+    const inputPrompt = promptTemplate.input_template ? new LangChainPromptTemplate({
       template: promptTemplate.input_template,
       inputVariables: [
         ...inputVariables.filter(v =>
           promptTemplate.input_template.includes(`{${v}}`)
         ),
       ],
-    });
+    }) : null;
 
     const outputSchema = jsonSchemaToZod(benchmark.output_schema);
 

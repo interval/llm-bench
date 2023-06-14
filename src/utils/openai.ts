@@ -49,11 +49,16 @@ export const createCompletion = async (model, systemPrompt, inputPrompt) => {
           role: system_role,
           content: systemPrompt,
         },
-        {
-          role: "user",
-          content: inputPrompt,
-        },
       ];
+
+      if (inputPrompt && inputPrompt.length > 0) {
+        messages.push(
+          {
+            role: "user",
+            content: inputPrompt,
+          }
+        )
+      }
 
       const completion = await openai.createChatCompletion({
         model: model.replace("openai/", ""),
