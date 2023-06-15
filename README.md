@@ -65,3 +65,19 @@ yarn dev
 ```
 
 Access LLM bench in [your Interval dashboard](https://interval.com/dashboard/actions).
+
+## Hosting Hugging Face models via Modal
+
+You can run LLM Bench against any language model, we just need a API endpoint to call. Feel free to add alternative models to `src/utils/models.ts` and look to the existing `createCompletion` definitions for example calls.
+
+This repo includes a script to host models available on [Hugging Face](https://huggingface.co/) via [Modal](https://modal.com/).
+
+To run it, you'll need a Modal account and to install their client:
+
+```
+pip insall modal
+```
+
+Start up your ephemeral app with `modal serve src/huggingface-llm.py`. This will boot up a GPU instance to host a language modal and a webserver to access it. It's currently set to run [tiiuae/falcon-7b-instruct](https://huggingface.co/tiiuae/falcon-7b-instruct). On first run, the instance will need to download the modal, which may take a while.
+
+To run against this model with LLM Bench, add the generated Modal API url (this will be returned when you run `modal serve`) to your `.env` file as `LLM_API_ENDPOINT` and update the available `huggingfaceModels` in `src/utils/huggingface.ts` to whichever model you decide to run.
